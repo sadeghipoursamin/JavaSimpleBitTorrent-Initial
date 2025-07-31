@@ -7,8 +7,12 @@ import java.util.regex.Pattern;
 
 public enum TrackerCommands implements CLICommands {
 	END("exit"),
-	TODO("TODO");
-	// TODO: Implement regex for each command
+	REFRESH_FILES("refresh_files"),
+	RESET_CONNECTIONS("reset_connections"),
+	LIST_PEERS("list_peers"),
+	LIST_FILES("list_files\\s+([^:]+):(\\d+)"),
+	GET_RECEIVES("get_receives\\s+([^:]+):(\\d+)"),
+	GET_SENDS("get_sends\\s+([^:]+):(\\d+)");
 
 	private final String regex;
 

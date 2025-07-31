@@ -10,7 +10,14 @@ public class TrackerApp {
 	private static ListenerThread listenerThread;
 
 	public static PeerConnectionThread getConnectionByIpPort(String ip, int port) {
-		// TODO: Implement peer connection lookup
+		synchronized (connections) {
+			for (PeerConnectionThread connection : connections) {
+				if (connection.getOtherSideIP().equals(ip) &&
+						connection.getOtherSidePort() == port) {
+					return connection;
+				}
+			}
+		}
 		return null;
 	}
 
@@ -23,7 +30,9 @@ public class TrackerApp {
 	}
 
 	public static List<PeerConnectionThread> getConnections() {
-		return List.copyOf(TrackerApp.connections);
+		synchronized (connections) {
+			return List.copyOf(TrackerApp.connections);
+		}
 	}
 
 	public static void startListening() {
@@ -36,20 +45,30 @@ public class TrackerApp {
 
 	public static void endAll() {
 		exitFlag = true;
-		for (PeerConnectionThread connection : connections)
-			connection.end();
-		connections.clear();
+		synchronized (connections) {
+			for (PeerConnectionThread connection : connections) {
+				connection.end();
+			}
+			connections.clear();
+		}
 	}
 
 	public static void removePeerConnection(PeerConnectionThread peerConnectionThread) {
 		if (peerConnectionThread != null) {
-			connections.remove(peerConnectionThread);
+			synchronized (connections) {
+				connections.remove(peerConnectionThread);
+			}
 			peerConnectionThread.end();
 		}
 	}
 
 	public static void addPeerConnection(PeerConnectionThread peerConnectionThread) {
-		if (peerConnectionThread != null && !connections.contains(peerConnectionThread))
-			connections.add(peerConnectionThread);
+		if (peerConnectionThread != null) {
+			synchronized (connections) {
+				if (!connections.contains(peerConnectionThread)) {
+					connections.add(peerConnectionThread);
+				}
+			}
+		}
 	}
 }

@@ -2,6 +2,7 @@ package peer.app;
 
 import common.models.ConnectionThread;
 import common.models.Message;
+import common.utils.JSONUtils;
 import peer.controllers.P2TConnectionController;
 
 import java.io.IOException;
@@ -20,13 +21,25 @@ public class P2TConnectionThread extends ConnectionThread {
 		try {
 			socket.setSoTimeout(TIMEOUT_MILLIS);
 
-			dataInputStream.readUTF();
-			Message message1 = P2TConnectionController.status();
-			sendMessage(message1);
+			String statusCmdStr = dataInputStream.readUTF();
+			Message statusCmd = JSONUtils.fromJson(statusCmdStr);
+			if (statusCmd.getType() == Message.Type.command &&
+					"status".equals(statusCmd.getFromBody("command"))) {
+				Message statusResponse = P2TConnectionController.status();
+				sendMessage(statusResponse);
+			} else {
+				return false;
+			}
 
-			dataInputStream.readUTF();
-			Message message2 = P2TConnectionController.getFilesList();
-			sendMessage(message2);
+			String filesCmdStr = dataInputStream.readUTF();
+			Message filesCmd = JSONUtils.fromJson(filesCmdStr);
+			if (filesCmd.getType() == Message.Type.command &&
+					"get_files_list".equals(filesCmd.getFromBody("command"))) {
+				Message filesResponse = P2TConnectionController.getFilesList();
+				sendMessage(filesResponse);
+			} else {
+				return false;
+			}
 
 			socket.setSoTimeout(0);
 			return true;

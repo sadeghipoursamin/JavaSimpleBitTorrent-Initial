@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
 
 public enum PeerCommands implements CLICommands {
 	END("exit"),
-	TODO("TODO");
-	// TODO: Implement regex for each command
+	DOWNLOAD("download\\s+(.+)"),
+	LIST("list");
 
 	private final String regex;
 

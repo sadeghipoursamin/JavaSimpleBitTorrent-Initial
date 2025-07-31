@@ -16,30 +16,60 @@ public class PeerConnectionThread extends ConnectionThread {
 
 	public PeerConnectionThread(Socket socket) throws IOException {
 		super(socket);
+		this.fileAndHashes = new HashMap<>();
 	}
 
 	@Override
 	public boolean initialHandshake() {
 		try {
-			// TODO: Implement initial handshake
-			// Refresh peer status (IP and port), Get peer's file list, Add connection to tracker's connection list
-			throw new UnsupportedOperationException("Initial handshake not implemented yet");
+			if (!refreshStatus()) {
+				return false;
+			}
+
+			refreshFileList();
+
+			TrackerApp.addPeerConnection(this);
+
+			return true;
 		} catch (Exception e) {
 			return false;
 		}
 	}
 
-	public void refreshStatus() {
-		// TODO: Implement status refresh
-		// Send status command and update peer's IP and port and wait for response
-		// then update peer's IP and port
-		throw new UnsupportedOperationException("Status refresh not implemented yet");
+	public boolean refreshStatus() {
+		HashMap<String, Object> body = new HashMap<>();
+		body.put("command", "status");
+		Message statusCmd = new Message(body, Message.Type.command);
+
+		Message response = sendAndWaitForResponse(statusCmd, TIMEOUT_MILLIS);
+
+		if (response != null && "ok".equals(response.getFromBody("response"))) {
+			String peerIP = response.getFromBody("peer");
+			int listenPort = response.getIntFromBody("listen_port");
+
+			setOtherSideIP(peerIP);
+			setOtherSidePort(listenPort);
+			return true;
+		}
+		return false;
 	}
 
 	public void refreshFileList() {
-		// TODO: Implement file list refresh
-		// Request and update peer's file list
-		throw new UnsupportedOperationException("File list refresh not implemented yet");
+		HashMap<String, Object> body = new HashMap<>();
+		body.put("command", "get_files_list");
+		Message filesCmd = new Message(body, Message.Type.command);
+
+		Message response = sendAndWaitForResponse(filesCmd, TIMEOUT_MILLIS);
+
+		if (response != null && "ok".equals(response.getFromBody("response"))) {
+			Map<String, Object> files = response.getFromBody("files");
+			fileAndHashes.clear();
+			if (files != null) {
+				for (Map.Entry<String, Object> entry : files.entrySet()) {
+					fileAndHashes.put(entry.getKey(), entry.getValue().toString());
+				}
+			}
+		}
 	}
 
 	@Override
@@ -59,5 +89,9 @@ public class PeerConnectionThread extends ConnectionThread {
 
 	public Map<String, String> getFileAndHashes() {
 		return Map.copyOf(fileAndHashes);
+	}
+
+	public boolean isSocketConnected() {
+		return socket != null && socket.isConnected() && !socket.isClosed();
 	}
 }
